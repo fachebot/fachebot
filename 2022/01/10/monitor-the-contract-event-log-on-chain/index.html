@@ -20,28 +20,38 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Pan Notes">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="前言在上一篇文章中我们学习了如何编写第一个Graph，并在终端打印输出 Hello World。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。Blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。 合约事件首先我先介绍一下什么是合约事件。我尽量说">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Blockc0de实时监控链上合约事件">
+<meta property="og:url" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/index.html">
 <meta property="og:site_name" content="Pan Notes">
+<meta property="og:description" content="前言在上一篇文章中我们学习了如何编写第一个Graph，并在终端打印输出 Hello World。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。Blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。 合约事件首先我先介绍一下什么是合约事件。我尽量说">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/ethereum_connector_node.png">
+<meta property="og:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/on_ethereum_event_log.png">
+<meta property="og:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/usdt_contract_address.png">
+<meta property="og:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/print_node.png">
+<meta property="og:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/event_logs.png">
+<meta property="article:published_time" content="2022-01-10T01:57:36.000Z">
+<meta property="article:modified_time" content="2022-01-10T02:25:21.113Z">
 <meta property="article:author" content="pan">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/ethereum_connector_node.png">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2022/01/10/monitor-the-contract-event-log-on-chain/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>Pan Notes</title>
+  <title>使用Blockc0de实时监控链上合约事件 | Pan Notes</title>
   
 
 
@@ -149,9 +159,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -167,10 +178,9 @@
       <meta itemprop="name" content="Pan Notes">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" class="post-title-link" itemprop="url">使用Blockc0de实时监控链上合约事件</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          使用Blockc0de实时监控链上合约事件
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -203,7 +213,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在<a href="/2022/01/06/hello-blockc0de/" title="上一篇文章">上一篇文章</a>中我们学习了如何编写第一个Graph，并在终端打印输出 <strong>Hello World</strong>。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。Blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。</p>
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在<a href="/2022/01/06/hello-blockc0de/" title="上一篇文章">上一篇文章</a>中我们学习了如何编写第一个Graph，并在终端打印输出 <strong>Hello World</strong>。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。Blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。</p>
 <h3 id="合约事件"><a href="#合约事件" class="headerlink" title="合约事件"></a>合约事件</h3><p>首先我先介绍一下什么是合约事件。我尽量说得直白一点，智能合约可以在发生某个动作后进行事件触发，然后将一些参数保存到交易日志中，这些日志与合约地址相关联。比如我们在以太坊网络转账USDT代币，转账成功后USDT的智能合约就会写入一条 <code>Transfer(address,address,uint256)</code> 事件日志(ERC20代币都是这样)。那事件日志有什么用呢？常用的用途就是我们可以根据事件日志判断链上发生了什么事情，比如上面的 <code>Transfer(address,address,uint256)</code> 事件，根据它我们就可以知道谁给谁转了多少个USDT。</p>
 <h3 id="编写Graph"><a href="#编写Graph" class="headerlink" title="编写Graph"></a>编写Graph</h3><p>下面我们开始编写一个Graph用于监控以太坊主网上USDT合约的事件日志。</p>
 <ol>
@@ -220,114 +230,30 @@
 <h3 id="运行Graph"><a href="#运行Graph" class="headerlink" title="运行Graph"></a>运行Graph</h3><p>点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮上传Graph至服务器并执行，如果监听到合约事件就会在 Terminal 处输出事件信息。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/event_logs.png"></p>
 <p>可以看到虽然输出很多事件日志信息，但是完全看不明白什么意思😂。不用着急，下次我们继续学习如何解析这些数据，当然解析这些数据一如既往地简单，因为 Blockc0de 存在的意义就是为了让没有编程基础的人也能够快速玩转区块链。</p>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/06/hello-blockc0de/">
+        
 
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="pan">
-      <meta itemprop="description" content="">
-    </span>
 
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Pan Notes">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/01/06/hello-blockc0de/" class="post-title-link" itemprop="url">Hello Blockc0de</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-01-06 16:01:32" itemprop="dateCreated datePublished" datetime="2022-01-06T16:01:32+08:00">2022-01-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-01-10 10:16:10" itemprop="dateModified" datetime="2022-01-10T10:16:10+08:00">2022-01-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/blockc0de/" itemprop="url" rel="index"><span itemprop="name">blockc0de</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h3><p>Blockc0de 是一款支持 <strong>0</strong> 代码开发区块链应用的工具，用户通过链接图形节点来处理业务逻辑的所有需求，而不需要任何编码技能。一旦用户准备好部署Graph，可以将其直接上传至网络并运行，借助 Blockc0de 用户可以建立可视化、自动化任务。</p>
-<p>任何人都可以在 Blockc0de 中创建Graph，Graph由多个不同类型的节点和链接组成。每个节点至少有一个接受要处理的值的输入和一个产生结果的输出。将一个输出连接到一个输入建立一个数据路径，使一个节点能够将数据输入到另一个节点。用这个简单而有力的原则可以实现任何复杂的业务逻辑。例如：监听链上鲸鱼转账并通过Telegram或者Twitter发送通知。</p>
-<h3 id="Hello-World"><a href="#Hello-World" class="headerlink" title="Hello World"></a>Hello World</h3><p>Hello World是一个最著名的程序。对每一位程序员来说，这个程序几乎是每一门编程语言中的第一个示例程序。下面我也试着用 Blockc0de 实现一个Hello World的Graph。</p>
-<ol>
-<li><p>首先打开 <a target="_blank" rel="noopener" href="http://ide.blockc0de.com/">Blockc0de 在线 IDE</a>，点击右上角 <strong>Connect to wallet</strong> 使用 MetaMask 钱包进行登录。<br><img src="/2022/01/06/hello-blockc0de/connect_to_wallet.png"></p>
-</li>
-<li><p>点击左侧节点列表里面的 <strong>Entry Pont</strong> 节点，会自动在Graph上面创建一个 <strong>Entry Pont</strong> 节点，<strong>Entry Pont</strong> 是Graph执行的入口，类型其它编程语言中的 <code>main()</code> 函数。<br><img src="/2022/01/06/hello-blockc0de/entry_point.png"></p>
-</li>
-<li><p>创建一个 <strong>Print</strong> 节点，并将 <strong>Entry Pont</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 进行链接，表示 <strong>Entry Pont</strong> 执行完成之后应立即执行 <strong>Print</strong> 节点。<strong>Print</strong> 节点可以将   <code>Message</code> 参数打印输出。<br><img src="/2022/01/06/hello-blockc0de/print_node.png"></p>
-</li>
-<li><p>我们可以看到 <strong>Print</strong> 节点还需要接收一个名为 <code>Message</code> 的参数，现在我们再创建一个 <strong>String</strong> 节点，它可以存储一个字符串类型的值。创建完成后我们输入文本 <code>Hello World</code>，并将它与 <strong>Print</strong> 节点的 <code>Message</code> 参数进行链接。<br><img src="/2022/01/06/hello-blockc0de/string_node.png"></p>
-</li>
-<li><p>现在我们的第一个Graph已经编写完成了，点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮即可上传至服务器并执行。<br><img src="/2022/01/06/hello-blockc0de/launch.png"></p>
-</li>
-<li><p>最后在右下角 Terminal 处输出 <strong>Hello World</strong>，大功告成。<br><img src="/2022/01/06/hello-blockc0de/terminal.png"></p>
-</li>
-</ol>
-<p>当然 Blockc0de 还能在不编写任何代码的情况下实现更加复杂的业务逻辑，我们留着以后慢慢探索吧。</p>
-<h3 id="GIthub地址"><a href="#GIthub地址" class="headerlink" title="GIthub地址"></a>GIthub地址</h3><p>Blockc0de 灵感来自于 <a target="_blank" rel="noopener" href="https://graphlinq.io/">GraphLinq Protocol</a>，由于 GraphLinq 开发团队疑似放弃开发，而我又比较喜欢这个项目，所以创建了 Blockc0de 项目。目前还在持续开发中，后续将专注于区块链链上数据实时通知、自动化处理复杂合约交互，项目完全开源，欢迎关注。</p>
-<p><a target="_blank" rel="noopener" href="https://github.com/blockc0de">https://github.com/blockc0de</a></p>
-
-      
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/01/06/hello-blockc0de/" rel="prev" title="Hello Blockc0de">
+      <i class="fa fa-chevron-left"></i> Hello Blockc0de
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
-  
-
-
   
 
 
@@ -380,6 +306,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E7%BA%A6%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">合约事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99Graph"><span class="nav-number">3.</span> <span class="nav-text">编写Graph</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8CGraph"><span class="nav-number">4.</span> <span class="nav-text">运行Graph</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

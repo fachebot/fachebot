@@ -155,7 +155,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/12/unpack-erc20-contract-event-log/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/16/send-telegram-message/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -169,7 +169,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/01/12/unpack-erc20-contract-event-log/" class="post-title-link" itemprop="url">使用Blockc0de解码合约事件日志</a>
+            <a href="/2022/01/16/send-telegram-message/" class="post-title-link" itemprop="url">使用blockc0de发送Telegram消息</a>
         </h2>
 
         <div class="post-meta">
@@ -180,7 +180,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-01-12 10:55:58 / 修改时间：12:18:10" itemprop="dateCreated datePublished" datetime="2022-01-12T10:55:58+08:00">2022-01-12</time>
+              <time title="创建时间：2022-01-16 10:20:02 / 修改时间：17:36:16" itemprop="dateCreated datePublished" datetime="2022-01-16T10:20:02+08:00">2022-01-16</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -203,16 +203,102 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>通过上一篇文章<a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" title="使用Blockc0de实时监控链上合约事件">使用Blockc0de实时监控链上合约事件</a>我们学习了如何编写一个Graph用于监控链上合约事件，在文章末尾留下了一个问题，如何将事件日志转换为可读的信息？现在我们就来讲解如何使用事件日志解码器来解码原始的事件信息，这样我们就能清楚的知道事件日志包含的信息，从何出判断链上智能合约产生了什么操作。</p>
+          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>通过前面《<a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" title="使用blockc0de实时监控链上合约事件">使用blockc0de实时监控链上合约事件</a>》和《<a href="/2022/01/12/unpack-erc20-contract-event-log/" title="使用blockc0de解码合约事件日志">使用blockc0de解码合约事件日志</a>》两篇文章的学习我们知道了如何监听和解析合约事件。今天我们来学习不一样的东西，如何通过Telegram Bot给用户发送通知。这是一个非常有用的功能，试想一下如果你编写了一个Graph监控到了巨额的USDT转账，然后自动通过Telegram Bot发送消息通知你，整个流程能够完全在Graph上面实现，会非常便捷。</p>
+<h3 id="创建Bot"><a href="#创建Bot" class="headerlink" title="创建Bot"></a>创建Bot</h3><p>首先我们需要创建一个<a target="_blank" rel="noopener" href="https://core.telegram.org/bots">Telegram Bot</a>，在 Telegram APP里面搜索用户 <a target="_blank" rel="noopener" href="https://t.me/botfather">@BotFather</a>，通过和这个Bot进行聊天我们就可以创建自己的机器人了。然后向BotFather发送一条 <code>/newbot</code> 命令创建一个新机器人。BotFather 会要求你输入机器人的名称和用户名，最后会为你的新机器人生成身份验证令牌(access token)。<br><img src="/2022/01/16/send-telegram-message/create_new_bot.png"></p>
+<p>我们需要将BotFather返回的 access token(截图红框部分) 保存下来，稍微会用到。</p>
+<h3 id="获取chatId"><a href="#获取chatId" class="headerlink" title="获取chatId"></a>获取chatId</h3><p>如果想要使用Telegram API向某人或某个群组发送消息就需要知道对方的 <code>chatId</code>。获取 <code>chatId</code> 的方式也很简单，在 Telegram APP里面搜索用户 <a target="_blank" rel="noopener" href="https://t.me/getidsbot">@getidsbot</a>，向它发送命令 <code>/start</code> 它就会将你的 <code>chatId</code> 告诉你，下图中红框部分就是我的 <code>chatId</code>。<br><img src="/2022/01/16/send-telegram-message/get_chat_ids.png"></p>
+<p>如果想要获取群组的 <code>chatId</code>，则需要将 <a target="_blank" rel="noopener" href="https://t.me/getidsbot">@getidsbot</a> 邀请进群，它会自动发送一条包含群组 <code>chatId</code> 的消息，如下图所示：<br><img src="/2022/01/16/send-telegram-message/get_group_chat_ids.png"></p>
+<h3 id="编写Graph"><a href="#编写Graph" class="headerlink" title="编写Graph"></a>编写Graph</h3><p>准备工作已经就绪了，现在我们可以开始编写Graph了，打开<a target="_blank" rel="noopener" href="https://ide.blockc0de.com/">blockde在线编辑器</a>：</p>
+<ol>
+<li><p>点击左侧节点列表中 <strong>Telegram Bot</strong> 节点， <strong>Telegram Bot</strong> 节点用于创建一个Bot实例。它接受一个名为 <code>AccessToken</code> 的参数，这个参数的值就是我们在Telegram中创建Bot时由BotFather返回给我们的。我们需要创建一个 <strong>String</strong> 节点保存 <code>AccessToken</code>，然后将 <strong>String</strong> 节点与<strong>Telegram Bot</strong> 节点的 <code>AccessToken</code> 的参数连接。<br><img src="/2022/01/16/send-telegram-message/telegram_bot_node.png"></p>
+</li>
+<li><p>点击左侧节点列表中 <strong>Send Telegram Bot</strong> 节点，<strong>Send Telegram Bot</strong> 节点用于控制Telegram Bot发送一条消息。<strong>Send Telegram Bot</strong> 节点接受三个参数：<code>TelegramBot</code>、<code>ChatId</code> 和 <code>Message</code>。首先我们将 <strong>Telegram Bot</strong> 节点的 <code>Out</code> 与 <strong>Send Telegram Bot</strong> 节点的 <code>In</code> 连接。参数 <code>TelegramBot</code> 表示 Bot 实例，所以直接将上面创建的 <strong>Telegram Bot</strong> 节点与它连接。<code>ChatId</code> 表示接受方，这里直接直接创建一个 <strong>String</strong> 节点，填入上面通过 <a target="_blank" rel="noopener" href="https://t.me/getidsbot">@getidsbot</a> 获取到的 <code>chatId</code> 填入，然后与 <strong>Send Telegram Bot</strong> 节点的 <code>ChatId</code> 参数连接。最后创建一个 <strong>String</strong> 节点，输入想要发送的消息，然后与 <strong>Send Telegram Bot</strong> 节点的 <code>Message</code> 参数连接。<br><img src="/2022/01/16/send-telegram-message/send_message_node.png"></p>
+</li>
+</ol>
+<h3 id="运行Graph"><a href="#运行Graph" class="headerlink" title="运行Graph"></a>运行Graph</h3><p>点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮上传Graph至服务器并执行，如果一切顺利的话你应该就能在Telegram上面收到来自Graph发送的消息了。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/12/unpack-erc20-contract-event-log/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="pan">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Pan Notes">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/01/12/unpack-erc20-contract-event-log/" class="post-title-link" itemprop="url">使用blockc0de解码合约事件日志</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-01-12 10:55:58" itemprop="dateCreated datePublished" datetime="2022-01-12T10:55:58+08:00">2022-01-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-01-16 17:12:27" itemprop="dateModified" datetime="2022-01-16T17:12:27+08:00">2022-01-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/blockc0de/" itemprop="url" rel="index"><span itemprop="name">blockc0de</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>通过上一篇文章<a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" title="使用blockc0de实时监控链上合约事件">使用blockc0de实时监控链上合约事件</a>我们学习了如何编写一个Graph用于监控链上合约事件，在文章末尾留下了一个问题，如何将事件日志转换为可读的信息？现在我们就来讲解如何使用事件日志解码器来解码原始的事件信息，这样我们就能清楚的知道事件日志包含的信息，从何出判断链上智能合约产生了什么操作。</p>
 <h3 id="合约ABI"><a href="#合约ABI" class="headerlink" title="合约ABI"></a>合约ABI</h3><p>ABI是合约接口的说明，内容包括合约的接口列表、接口名称、参数名称、参数类型、返回类型等，这些信息以JSON格式保存。通常项目方也会把合约源代码公布到区块浏览器，其中就包含了ABI信息，我们可以调用<a target="_blank" rel="noopener" href="https://etherscan.io/">etherscan</a>的API接口查询合约的ABI(如果项目方公布的话)。在浏览器中打开地址 <a target="_blank" rel="noopener" href="https://api.etherscan.io/api?module=contract&action=getabi&address=0xdac17f958d2ee523a2206206994597c13d831ec7">https://api.etherscan.io/api?module=contract&amp;action=getabi&amp;address=0xdac17f958d2ee523a2206206994597c13d831ec7</a> 会返回USDT合约的ABI，<code>0xdac17f958d2ee523a2206206994597c13d831ec7</code> 是USDT合约的地址，可以将它替换为其它合约的地址查询它的ABI。</p>
-<p>所以我们在解码合约事件日志之前必须要知道合约ABI才行，ERC20代币有标准的合约ABI，Blockc0de已经内置了，我们将会学习如何使用它。另外Blockc0de还支持自定义ABI，用于满足用户解析不同合约的需求。</p>
+<p>所以我们在解码合约事件日志之前必须要知道合约ABI才行，ERC20代币有标准的合约ABI，blockc0de已经内置了，我们将会学习如何使用它。另外blockc0de还支持自定义ABI，用于满足用户解析不同合约的需求。</p>
 <h3 id="编写Graph"><a href="#编写Graph" class="headerlink" title="编写Graph"></a>编写Graph</h3><p>现在我们来继续编写上次的Graph，将 <strong>On Ethereum Event Log</strong> 节点的输出参数 <code>EventLog</code> 解析并显示为可读的信息。</p>
 <ol>
-<li><p>点击左侧节点列表中 <strong>Ethereum Log Decoder 节点</strong>，<strong>Ethereum Log Decoder</strong> 节点接受两个参数：1. <code>EventLog</code> 参数表示事件日志信息，我们将 <strong>On Ethereum Event Log</strong> 的输出参数 <code>EventLog</code> 与它进行链接。<code>Abi</code> 参数表示合约接口的说明，我们可以自己创建一个全新的ABI节点并输入JSON格式的内容，也可以使用内置的ABI节点。最后将 <strong>On Ethereum Event Log</strong> 节点的 <code>Out</code> 与 <strong>Ethereum Log Decoder</strong> 节点的 <code>In</code> 链接，每当接收到新的事件日志时，都会去执行 <strong>Ethereum Log Decoder</strong> 节点。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/ethereum_log_decoder.png"></p>
+<li><p>点击左侧节点列表中 <strong>Ethereum Log Decoder 节点</strong>，<strong>Ethereum Log Decoder</strong> 节点接受两个参数：1. <code>EventLog</code> 参数表示事件日志信息，我们将 <strong>On Ethereum Event Log</strong> 的输出参数 <code>EventLog</code> 与它进行连接。<code>Abi</code> 参数表示合约接口的说明，我们可以自己创建一个全新的ABI节点并输入JSON格式的内容，也可以使用内置的ABI节点。最后将 <strong>On Ethereum Event Log</strong> 节点的 <code>Out</code> 与 <strong>Ethereum Log Decoder</strong> 节点的 <code>In</code> 连接，每当接收到新的事件日志时，都会去执行 <strong>Ethereum Log Decoder</strong> 节点。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/ethereum_log_decoder.png"></p>
 </li>
-<li><p>Blockc0de内置了ERC20代币的ABI信息，点击左侧节点列表中 <strong>ERC20 ABI</strong> 节点，将输出参数 <code>Abi</code> 与 <strong>Ethereum Log Decoder</strong> 节点的输入参数 <code>Abi</code> 链接。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/erc20_abi_node.png"></p>
+<li><p>blockc0de内置了ERC20代币的ABI信息，点击左侧节点列表中 <strong>ERC20 ABI</strong> 节点，将输出参数 <code>Abi</code> 与 <strong>Ethereum Log Decoder</strong> 节点的输入参数 <code>Abi</code> 连接。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/erc20_abi_node.png"></p>
 </li>
-<li><p>创建一个 <strong>Print</strong> 节点用于打印解析后的数据，将 <strong>Ethereum Log Decoder</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 链接，<code>EventLog</code> 与 <code>Message</code> 链接。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/print_event_log.png"></p>
+<li><p>创建一个 <strong>Print</strong> 节点用于打印解析后的数据，将 <strong>Ethereum Log Decoder</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 连接，<code>EventLog</code> 与 <code>Message</code> 连接。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/print_event_log.png"></p>
 </li>
 </ol>
 <h3 id="运行Graph"><a href="#运行Graph" class="headerlink" title="运行Graph"></a>运行Graph</h3><p>点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮上传Graph至服务器并执行，如果监听到合约事件就会在 Terminal 处输出解析后事件信息。<br><img src="/2022/01/12/unpack-erc20-contract-event-log/event_logs.png"></p>
@@ -222,7 +308,7 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">event Transfer(address indexed _from, address indexed _to, uint256 _value)</span><br><span class="line">event Approval(address indexed _owner, address indexed _spender, uint256 _value)</span><br></pre></td></tr></table></figure>
 
 <p><code>Transfer</code> 是转账事件，<code>Approval</code> 是授权事件。<code>Transfer</code> 有三个参数，<code>_from</code> 表示转账者地址，<code>_to</code> 表示接收者地址，<code>_value</code> 表示转账金额，这三个参数与输出 JSON 中的 <code>inputs</code> 对应。</p>
-<h3 id="最后问题"><a href="#最后问题" class="headerlink" title="最后问题"></a>最后问题</h3><p>最后有没有感觉转账金额非常大？这是因为计量单位的问题，我们还需要对转账金额进行一单位次转换，Blockc0de 提供了 <strong>Wei To Decimals</strong> 节点处理单位转换，这个内容我们留到以后再讲解吧。</p>
+<h3 id="最后问题"><a href="#最后问题" class="headerlink" title="最后问题"></a>最后问题</h3><p>最后有没有感觉转账金额非常大？这是因为计量单位的问题，我们还需要对转账金额进行一次单位转换，blockc0de 提供了 <strong>Wei To Decimals</strong> 节点处理单位转换，这个内容我们留到以后再讲解吧。</p>
 
       
     </div>
@@ -256,7 +342,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" class="post-title-link" itemprop="url">使用Blockc0de实时监控链上合约事件</a>
+            <a href="/2022/01/10/monitor-the-contract-event-log-on-chain/" class="post-title-link" itemprop="url">使用blockc0de实时监控链上合约事件</a>
         </h2>
 
         <div class="post-meta">
@@ -273,7 +359,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-01-12 10:40:41" itemprop="dateModified" datetime="2022-01-12T10:40:41+08:00">2022-01-12</time>
+                <time title="修改时间：2022-01-16 17:12:27" itemprop="dateModified" datetime="2022-01-16T17:12:27+08:00">2022-01-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -296,22 +382,22 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在<a href="/2022/01/12/hello-blockc0de/" title="上一篇文章">上一篇文章</a>中我们学习了如何编写第一个Graph，并在终端打印输出 <strong>Hello World</strong>。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。Blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。</p>
+          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在<a href="/2022/01/06/hello-blockc0de/" title="上一篇文章">上一篇文章</a>中我们学习了如何编写第一个Graph，并在终端打印输出 <strong>Hello World</strong>。现在我们开始学习如何实时监听链上合约事件，是不是感觉到进展太快？因为之前我们还在学习打印输出Hello World，现在就开始区块链编程之旅了。blockc0de 0代码区块链编程工具就是这么神奇，让没有编程基础的人也能够快速玩转区块链，现在我们开始吧。</p>
 <h3 id="合约事件"><a href="#合约事件" class="headerlink" title="合约事件"></a>合约事件</h3><p>首先我先介绍一下什么是合约事件。我尽量说得直白一点，智能合约可以在发生某个动作后进行事件触发，然后将一些参数保存到交易日志中，这些日志与合约地址相关联。比如我们在以太坊网络转账USDT代币，转账成功后USDT的智能合约就会写入一条 <code>Transfer(address,address,uint256)</code> 事件日志(ERC20代币都是这样)。那事件日志有什么用呢？常用的用途就是我们可以根据事件日志判断链上发生了什么事情，比如上面的 <code>Transfer(address,address,uint256)</code> 事件，根据它我们就可以知道谁给谁转了多少个USDT。</p>
 <h3 id="编写Graph"><a href="#编写Graph" class="headerlink" title="编写Graph"></a>编写Graph</h3><p>下面我们开始编写一个Graph用于监控以太坊主网上USDT合约的事件日志。</p>
 <ol>
 <li><p>首先点击左侧节点列表中 <strong>Ethereum Connector</strong> 节点，<strong>Ethereum Connector</strong> 节点用于连接到以太坊 RPC 节点，当然也可以连接到其它 EVM 兼容链，但是你需要指定 <code>Url</code> 和  <code>SocketUrl</code> 参数。如果我们不设置这两个参数就会默认连接到以太坊主网。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/ethereum_connector_node.png"></p>
 </li>
-<li><p>点击左侧节点列表中 <strong>On Ethereum Event Log</strong>，<strong>On Ethereum Event Log</strong> 节点会监听合约事件，当事件触发的时候会去执行 <code>Out</code> 链接的节点。它接受两个参数：<code>Connection</code> 表示连接器，我们将之前创建的 <strong>Ethereum Connector</strong> 节点与它进行链接。<code>Contract</code> 表示要监听的合约地址。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/on_ethereum_event_log.png"></p>
+<li><p>点击左侧节点列表中 <strong>On Ethereum Event Log</strong>，<strong>On Ethereum Event Log</strong> 节点会监听合约事件，当事件触发的时候会去执行 <code>Out</code> 连接的节点。它接受两个参数：<code>Connection</code> 表示连接器，我们将之前创建的 <strong>Ethereum Connector</strong> 节点与它进行连接。<code>Contract</code> 表示要监听的合约地址。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/on_ethereum_event_log.png"></p>
 </li>
-<li><p>点击左侧节点列表中 <strong>String</strong> 节点，然后在 <strong>String</strong> 节点中输入USDT的合约地址：<code>0xdac17f958d2ee523a2206206994597c13d831ec7</code>。再将输出参数 <code>Value</code> 链接到 <strong>On Ethereum Event Log</strong> 节点的输入参数 <code>Contract</code>。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/usdt_contract_address.png"></p>
+<li><p>点击左侧节点列表中 <strong>String</strong> 节点，然后在 <strong>String</strong> 节点中输入USDT的合约地址：<code>0xdac17f958d2ee523a2206206994597c13d831ec7</code>。再将输出参数 <code>Value</code> 连接到 <strong>On Ethereum Event Log</strong> 节点的输入参数 <code>Contract</code>。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/usdt_contract_address.png"></p>
 </li>
-<li><p>为了能够在监控到合约事件后看到事件的内容，我们还是需要将事件信息打印出来。还记得 Hello World 的例子吗？我们创建一个 <strong>Print</strong> 节点，并将 <strong>On Ethereum Event Log</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 链接， <strong>On Ethereum Event Log</strong> 节点的输出参数 <code>EventLog</code> 与 <strong>Print</strong> 节点的输入参数 <code>Message</code> 链接。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/print_node.png"></p>
+<li><p>为了能够在监控到合约事件后看到事件的内容，我们还是需要将事件信息打印出来。还记得 Hello World 的例子吗？我们创建一个 <strong>Print</strong> 节点，并将 <strong>On Ethereum Event Log</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 连接， <strong>On Ethereum Event Log</strong> 节点的输出参数 <code>EventLog</code> 与 <strong>Print</strong> 节点的输入参数 <code>Message</code> 连接。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/print_node.png"></p>
 </li>
 </ol>
 <p>短短几个步骤，我们的Graph已经编写完成了，接下来运行起来看看效果吧。</p>
 <h3 id="运行Graph"><a href="#运行Graph" class="headerlink" title="运行Graph"></a>运行Graph</h3><p>点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮上传Graph至服务器并执行，如果监听到合约事件就会在 Terminal 处输出事件信息。<br><img src="/2022/01/10/monitor-the-contract-event-log-on-chain/event_logs.png"></p>
-<p>可以看到虽然输出很多事件日志信息，但是完全看不明白什么意思😂。不用着急，下次我们继续学习如何解析这些数据，当然解析这些数据一如既往地简单，因为 Blockc0de 存在的意义就是为了让没有编程基础的人也能够快速玩转区块链。</p>
+<p>可以看到虽然输出很多事件日志信息，但是完全看不明白什么意思😂。不用着急，下次我们继续学习如何解析这些数据，当然解析这些数据一如既往地简单，因为 blockc0de 存在的意义就是为了让没有编程基础的人也能够快速玩转区块链。</p>
 
       
     </div>
@@ -345,7 +431,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/01/06/hello-blockc0de/" class="post-title-link" itemprop="url">Hello Blockc0de</a>
+            <a href="/2022/01/06/hello-blockc0de/" class="post-title-link" itemprop="url">Hello blockc0de</a>
         </h2>
 
         <div class="post-meta">
@@ -362,7 +448,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-01-12 11:25:06" itemprop="dateModified" datetime="2022-01-12T11:25:06+08:00">2022-01-12</time>
+                <time title="修改时间：2022-01-16 17:12:27" itemprop="dateModified" datetime="2022-01-16T17:12:27+08:00">2022-01-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -385,25 +471,25 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h3><p>Blockc0de 是一款支持 <strong>0</strong> 代码开发区块链应用的工具，用户通过链接图形节点来处理业务逻辑的所有需求，而不需要任何编码技能。一旦用户准备好部署Graph，可以将其直接上传至网络并运行，借助 Blockc0de 用户可以建立可视化、自动化任务。</p>
-<p>任何人都可以在 Blockc0de 中创建Graph，Graph由多个不同类型的节点和链接组成。每个节点至少有一个接受要处理的值的输入和一个产生结果的输出。将一个输出连接到一个输入建立一个数据路径，使一个节点能够将数据输入到另一个节点。用这个简单而有力的原则可以实现任何复杂的业务逻辑。例如：监听链上鲸鱼转账并通过Telegram或者Twitter发送通知。</p>
-<h3 id="Hello-World"><a href="#Hello-World" class="headerlink" title="Hello World"></a>Hello World</h3><p>Hello World是一个最著名的程序。对每一位程序员来说，这个程序几乎是每一门编程语言中的第一个示例程序。下面我也试着用 Blockc0de 实现一个Hello World的Graph。</p>
+          <h3 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h3><p>blockc0de 是一款支持 <strong>0</strong> 代码开发区块链应用的工具，用户通过连接图形节点来处理业务逻辑的所有需求，而不需要任何编码技能。一旦用户准备好部署Graph，可以将其直接上传至网络并运行，借助 blockc0de 用户可以建立可视化、自动化任务。</p>
+<p>任何人都可以在 blockc0de 中创建Graph，Graph由多个不同类型的节点和连接组成。每个节点至少有一个接受要处理的值的输入和一个产生结果的输出。将一个输出连接到一个输入建立一个数据路径，使一个节点能够将数据输入到另一个节点。用这个简单而有力的原则可以实现任何复杂的业务逻辑。例如：监听链上鲸鱼转账并通过Telegram或者Twitter发送通知。</p>
+<h3 id="Hello-World"><a href="#Hello-World" class="headerlink" title="Hello World"></a>Hello World</h3><p>Hello World是一个最著名的程序。对每一位程序员来说，这个程序几乎是每一门编程语言中的第一个示例程序。下面我也试着用 blockc0de 实现一个Hello World的Graph。</p>
 <ol>
-<li><p>首先打开 <a target="_blank" rel="noopener" href="http://ide.blockc0de.com/">Blockc0de 在线 IDE</a>，点击右上角 <strong>Connect to wallet</strong> 使用 MetaMask 钱包进行登录。<br><img src="/2022/01/06/hello-blockc0de/connect_to_wallet.png"></p>
+<li><p>首先打开 <a target="_blank" rel="noopener" href="http://ide.blockc0de.com/">blockc0de 在线 IDE</a>，点击右上角 <strong>Connect to wallet</strong> 使用 MetaMask 钱包进行登录。<br><img src="/2022/01/06/hello-blockc0de/connect_to_wallet.png"></p>
 </li>
 <li><p>点击左侧节点列表里面的 <strong>Entry Pont</strong> 节点，会自动在Graph上面创建一个 <strong>Entry Pont</strong> 节点，<strong>Entry Pont</strong> 是Graph执行的入口，类型其它编程语言中的 <code>main()</code> 函数。<br><img src="/2022/01/06/hello-blockc0de/entry_point.png"></p>
 </li>
-<li><p>创建一个 <strong>Print</strong> 节点，并将 <strong>Entry Pont</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 进行链接，表示 <strong>Entry Pont</strong> 执行完成之后应立即执行 <strong>Print</strong> 节点。<strong>Print</strong> 节点可以将   <code>Message</code> 参数打印输出。<br><img src="/2022/01/06/hello-blockc0de/print_node.png"></p>
+<li><p>创建一个 <strong>Print</strong> 节点，并将 <strong>Entry Pont</strong> 节点的 <code>Out</code> 与 <strong>Print</strong> 节点的 <code>In</code> 进行连接，表示 <strong>Entry Pont</strong> 执行完成之后应立即执行 <strong>Print</strong> 节点。<strong>Print</strong> 节点可以将   <code>Message</code> 参数打印输出。<br><img src="/2022/01/06/hello-blockc0de/print_node.png"></p>
 </li>
-<li><p>我们可以看到 <strong>Print</strong> 节点还需要接收一个名为 <code>Message</code> 的参数，现在我们再创建一个 <strong>String</strong> 节点，它可以存储一个字符串类型的值。创建完成后我们输入文本 <code>Hello World</code>，并将它与 <strong>Print</strong> 节点的 <code>Message</code> 参数进行链接。<br><img src="/2022/01/06/hello-blockc0de/string_node.png"></p>
+<li><p>我们可以看到 <strong>Print</strong> 节点还需要接收一个名为 <code>Message</code> 的参数，现在我们再创建一个 <strong>String</strong> 节点，它可以存储一个字符串类型的值。创建完成后我们输入文本 <code>Hello World</code>，并将它与 <strong>Print</strong> 节点的 <code>Message</code> 参数进行连接。<br><img src="/2022/01/06/hello-blockc0de/string_node.png"></p>
 </li>
 <li><p>现在我们的第一个Graph已经编写完成了，点击顶部菜单栏 <strong>Execution/Launch</strong> 按钮即可上传至服务器并执行。<br><img src="/2022/01/06/hello-blockc0de/launch.png"></p>
 </li>
 <li><p>最后在右下角 Terminal 处输出 <strong>Hello World</strong>，大功告成。<br><img src="/2022/01/06/hello-blockc0de/terminal.png"></p>
 </li>
 </ol>
-<p>当然 Blockc0de 还能在不编写任何代码的情况下实现更加复杂的业务逻辑，我们留着以后慢慢探索吧。</p>
-<h3 id="GIthub地址"><a href="#GIthub地址" class="headerlink" title="GIthub地址"></a>GIthub地址</h3><p>Blockc0de 灵感来自于 <a target="_blank" rel="noopener" href="https://graphlinq.io/">GraphLinq Protocol</a>，由于 GraphLinq 开发团队疑似放弃开发，而我又比较喜欢这个项目，所以创建了 Blockc0de 项目。目前还在持续开发中，后续将专注于区块链链上数据实时通知、自动化处理复杂合约交互，项目完全开源，欢迎关注。</p>
+<p>当然 blockc0de 还能在不编写任何代码的情况下实现更加复杂的业务逻辑，我们留着以后慢慢探索吧。</p>
+<h3 id="GIthub地址"><a href="#GIthub地址" class="headerlink" title="GIthub地址"></a>GIthub地址</h3><p>blockc0de 灵感来自于 <a target="_blank" rel="noopener" href="https://graphlinq.io/">GraphLinq Protocol</a>，由于 GraphLinq 开发团队疑似放弃开发，而我又比较喜欢这个项目，所以创建了 blockc0de 项目。目前还在持续开发中，后续将专注于区块链链上数据实时通知、自动化处理复杂合约交互，项目完全开源，欢迎关注。</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/blockc0de">https://github.com/blockc0de</a></p>
 
       
@@ -486,7 +572,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-count">4</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
